@@ -1,56 +1,34 @@
-const startBtn = document.getElementById("start");
-const stopBtn = document.getElementById("stop");
 const record = document.getElementById("record");
-
+const stopRecord = document.getElementById("stop-record");
+const playback = document.getElementById("playback");
+const download = document.getElementById("download");
+const container = document.getElementById("container");
 const userMedia = new Tone.UserMedia();
+
 let recorder;
 
-startBtn.addEventListener("click", async () => {
-  await userMedia.open();
-
-  const vibrato = new Tone.Vibrato({
-    maxDelay: 0.3,
-    frequency: 0.8,
-    depth: 0.1,
-  });
-
-  const reverb = new Tone.Reverb({
-    wet: 1,
-    decay: 1.9,
-    preDelay: 0.2,
-  });
-
-  const delay = new Tone.FeedbackDelay({
-    delayTime: "8n",
-    feedback: 0.5,
-  });
-
-  recorder = new Tone.Recorder();
-  // Microphone -> Vibrato -> Reverb -> Delay -> Recorder -> Speaker
-  userMedia.connect(vibrato);
-  vibrato.connect(reverb);
-  reverb.connect(delay);
-  delay.connect(recorder);
-  delay.toDestination();
-});
-
 record.addEventListener("click", async () => {
+  await userMedia.open();
+  recorder = new Tone.Recorder();
+  userMedia.connect(recorder);
+  startRecording();
+});
+
+function startRecording() {
+  recorder.start();
+}
+
+stopRecord.addEventListener("click", async () => {
   if (recorder) {
-    recorder.start();
-    setTimeout(async () => {
-      const recording = await recorder.stop();
-      const url = URL.createObjectURL(recording);
-      const anchor = document.createElement("a");
-      anchor.download = "recording.wav";
-      anchor.href = url;
-      anchor.click();
-    }, 5000);
+    const recording = await recorder.stop();
+    const url = URL.createObjectURL(recording);
+    createAudioEL(url);
   }
 });
 
-stopBtn.addEventListener("click", () => {
-  if (userMedia.state === "started") {
-    userMedia.close();
-    userMedia.disconnect();
-  }
-});
+function createAudioEL(src) {
+  const audio = document.createElement("audio");
+  audio.src = src;
+  audio.controls = true;
+  container.append(audio);
+}

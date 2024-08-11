@@ -10,12 +10,19 @@
       crossorigin="anonymous"
       referrerpolicy="no-referrer"
     ></script>
+    <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <h1>SOUND EFFECT</h1>
-    <button id="start">Start</button>
-    <button id="stop">Stop</button>
-    <button id="record">record</button>
+    <div class="title">
+      <h1>SOUND EFFECT</h1>
+    </div>
+    <div class="buttons">
+      <button id="record" class="btn">record</button>
+      <button id="stop-record" class="btn">stop record</button>
+      <button id="playback" class="btn">playback</button>
+      <button id="download" class="btn">download</button>
+    </div>
+    <div id="container"></div>
     <script src="app.js"></script>
   </body>
 </html>
