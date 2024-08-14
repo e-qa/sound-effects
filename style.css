@@ -59,7 +59,7 @@ body {
   z-index: -1;
   background: linear-gradient(40deg, #bd34fe, #0098f6, #00f639, #d00a0a);
   background-size: 200%;
-  animation: animation 10s linear infinite;
+  animation: animation 3s linear infinite;
 }
 .btn:after {
   z-index: -1;
@@ -77,4 +77,24 @@ body {
   0% {
     background-position: 200%, 0;
   }
+}
+.effects {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+.effect-box {
+  width: 150px;
+  height: 150px;
+  text-align: center;
+  background-color: var(--clr-main);
+  cursor: pointer;
+  border-radius: 50%;
+  box-shadow: 11px 20px 90px 0px rgba(255, 255, 255, 0.1);
+  border: none;
+  color: var(--clr-ntrl-min);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
