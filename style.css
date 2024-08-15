@@ -98,3 +98,12 @@ body {
   align-items: center;
   justify-content: center;
 }
+
+@media (max-width: 425px) {
+  .title > h1 {
+    font-size: 32px;
+  }
+  .effects {
+    flex-direction: column;
+  }
+}
