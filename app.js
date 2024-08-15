@@ -10,29 +10,26 @@ const chorus = document.getElementById("chorus");
 const distortion = document.getElementById("distortion");
 const userMedia = new Tone.UserMedia();
 
-let audioSrc;
-let recorderAudio;
 let player;
 let currentEffect = null;
-let downloadEffect = new Tone.Recorder();
 let recorder;
 let chunks = [];
 
 record.addEventListener("click", async () => {
   await userMedia.open();
-  recorderAudio = new Tone.Recorder();
-  userMedia.connect(recorderAudio);
+  recorder = new Tone.Recorder();
+  userMedia.connect(recorder);
   startRecording();
 });
 
 function startRecording() {
   recording.textContent = "Recording";
-  recorderAudio.start();
+  recorder.start();
 }
 
 stopRecord.addEventListener("click", async () => {
-  if (recorderAudio) {
-    const recording = await recorderAudio.stop();
+  if (recorder) {
+    const recording = await recorder.stop();
     const url = URL.createObjectURL(recording);
     createAudioEL(url);
   }
@@ -43,8 +40,7 @@ function createAudioEL(src) {
   const audio = document.createElement("audio");
   audio.src = src;
   audio.controls = true;
-  audioSrc = src;
-  player = new Tone.Player(audioSrc).toDestination();
+  player = new Tone.Player(src).toDestination();
 }
 
 function applyEffect(effect) {
@@ -57,7 +53,7 @@ function applyEffect(effect) {
   recordingEffect();
 }
 
-reverb.addEventListener("click", async () => {
+reverb.addEventListener("click", () => {
   const reverb = new Tone.JCReverb({
     roomSize: 0.8,
     wet: 0.5,
@@ -65,7 +61,7 @@ reverb.addEventListener("click", async () => {
   applyEffect(reverb);
 });
 
-chorus.addEventListener("click", async () => {
+chorus.addEventListener("click", () => {
   const chorusEffect = new Tone.Chorus({
     frequency: 10,
     delayTime: 0.1,
@@ -75,7 +71,7 @@ chorus.addEventListener("click", async () => {
   applyEffect(chorusEffect);
 });
 
-distortion.addEventListener("click", async () => {
+distortion.addEventListener("click", () => {
   const distort = new Tone.Distortion({
     distortion: 0.8,
     saturate: 0.5,
@@ -83,7 +79,7 @@ distortion.addEventListener("click", async () => {
   applyEffect(distort);
 });
 
-delay.addEventListener("click", async () => {
+delay.addEventListener("click", () => {
   const delayEffect = new Tone.FeedbackDelay({
     delayTime: "8n",
     feedback: 0.6,
@@ -93,14 +89,15 @@ delay.addEventListener("click", async () => {
 });
 
 download.addEventListener("click", () => {
-  if (recorder && recorder.state === "recording") {
+  if (recorder) {
     recorder.stop();
     recorder.onstop = () => {
       const audioBlob = new Blob(chunks, { type: "audio/wav" });
       const audioUrl = URL.createObjectURL(audioBlob);
       const link = document.createElement("a");
       link.href = audioUrl;
-      link.setAttribute("download", "recording.wav");
+      link.download = "recording.wav";
+      link.style.display = "none";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -111,7 +108,7 @@ download.addEventListener("click", () => {
   }
 });
 
-const recordingEffect = async () => {
+const recordingEffect = () => {
   const destination = Tone.context.createMediaStreamDestination();
   Tone.Master.connect(destination);
   recorder = new MediaRecorder(destination.stream);
