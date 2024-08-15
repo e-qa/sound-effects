@@ -111,7 +111,7 @@ download.addEventListener("click", () => {
 const recordingEffect = async () => {
   const destination = Tone.context.createMediaStreamDestination();
   Tone.Master.connect(destination);
-  recorder = new recorder(destination.stream);
+  recorder = new MediaRecorder(destination.stream);
   recorder.ondataavailable = (event) => {
     chunks.push(event.data);
   };
