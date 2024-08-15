@@ -29,11 +29,22 @@ function startRecording() {
 
 stopRecord.addEventListener("click", async () => {
   if (recorder) {
-    const recording = await recorder.stop();
-    const url = URL.createObjectURL(recording);
-    createAudioEL(url);
+    try {
+      const recording = await recorder.stop();
+      if (recording instanceof Blob) {
+        const url = URL.createObjectURL(recording);
+        createAudioEL(url);
+        audio.addEventListener("ended", () => {
+          URL.revokeObjectURL(url);
+        });
+      } else {
+        console.error("Recorder.stop() did not return a Blob");
+      }
+    } catch (error) {
+      console.error("Error stopping recorder:", error);
+    }
+    recording.textContent = "";
   }
-  recording.textContent = "";
 });
 
 function createAudioEL(src) {
