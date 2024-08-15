@@ -11,25 +11,28 @@ const distortion = document.getElementById("distortion");
 const userMedia = new Tone.UserMedia();
 
 let audioSrc;
-let recorder;
+let recorderAudio;
 let player;
 let currentEffect = null;
+let downloadEffect = new Tone.Recorder();
+let recorder;
+let chunks = [];
 
 record.addEventListener("click", async () => {
   await userMedia.open();
-  recorder = new Tone.Recorder();
-  userMedia.connect(recorder);
+  recorderAudio = new Tone.Recorder();
+  userMedia.connect(recorderAudio);
   startRecording();
 });
 
 function startRecording() {
   recording.textContent = "Recording";
-  recorder.start();
+  recorderAudio.start();
 }
 
 stopRecord.addEventListener("click", async () => {
-  if (recorder) {
-    const recording = await recorder.stop();
+  if (recorderAudio) {
+    const recording = await recorderAudio.stop();
     const url = URL.createObjectURL(recording);
     createAudioEL(url);
   }
@@ -51,6 +54,7 @@ function applyEffect(effect) {
   player.connect(effect);
   currentEffect = effect;
   player.start();
+  recordingEffect();
 }
 
 reverb.addEventListener("click", async () => {
@@ -85,6 +89,31 @@ delay.addEventListener("click", async () => {
     feedback: 0.6,
     wet: 0.5,
   }).toDestination();
-
   applyEffect(delayEffect);
 });
+
+download.addEventListener("click", () => {
+  recorder.stop();
+
+  recorder.onstop = () => {
+    const audioBlob = new Blob(chunks, { type: "audio/wav" });
+    const audioUrl = URL.createObjectURL(audioBlob);
+    const link = document.createElement("a");
+    link.href = audioUrl;
+    link.setAttribute("download", "recording.wav");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    chunks = [];
+  };
+});
+
+const recordingEffect = async () => {
+  const destination = Tone.context.createMediaStreamDestination();
+  Tone.Master.connect(destination);
+  recorder = new recorder(destination.stream);
+  recorder.ondataavailable = (event) => {
+    chunks.push(event.data);
+  };
+  recorder.start();
+};
