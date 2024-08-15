@@ -93,19 +93,22 @@ delay.addEventListener("click", async () => {
 });
 
 download.addEventListener("click", () => {
-  recorder.stop();
-
-  recorder.onstop = () => {
-    const audioBlob = new Blob(chunks, { type: "audio/wav" });
-    const audioUrl = URL.createObjectURL(audioBlob);
-    const link = document.createElement("a");
-    link.href = audioUrl;
-    link.setAttribute("download", "recording.wav");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    chunks = [];
-  };
+  if (recorder && recorder.state === "recording") {
+    recorder.stop();
+    recorder.onstop = () => {
+      const audioBlob = new Blob(chunks, { type: "audio/wav" });
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const link = document.createElement("a");
+      link.href = audioUrl;
+      link.setAttribute("download", "recording.wav");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      chunks = [];
+    };
+  } else {
+    console.log("Recorder not started or already stopped.");
+  }
 });
 
 const recordingEffect = async () => {
