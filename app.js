@@ -14,6 +14,7 @@ let player;
 let currentEffect = null;
 let recorder;
 let chunks = [];
+let audioBlobUrl = null;
 
 record.addEventListener("click", async () => {
   await userMedia.open();
@@ -32,11 +33,8 @@ stopRecord.addEventListener("click", async () => {
     try {
       const recording = await recorder.stop();
       if (recording instanceof Blob) {
-        const url = URL.createObjectURL(recording);
-        createAudioEL(url);
-        audio.addEventListener("ended", () => {
-          URL.revokeObjectURL(url);
-        });
+        audioBlobUrl = URL.createObjectURL(recording);
+        createAudioEL(audioBlobUrl);
       } else {
         console.error("Recorder.stop() did not return a Blob");
       }
@@ -51,6 +49,10 @@ function createAudioEL(src) {
   const audio = document.createElement("audio");
   audio.src = src;
   audio.controls = true;
+  container.appendChild(audio);
+  if (player) {
+    player.dispose();
+  }
   player = new Tone.Player(src).toDestination();
 }
 
@@ -60,16 +62,17 @@ function applyEffect(effect) {
   }
   player.connect(effect);
   currentEffect = effect;
-  player.start();
-  recordingEffect();
+  if (player.state === "stopped") {
+    player.start();
+  }
 }
 
 reverb.addEventListener("click", () => {
-  const reverb = new Tone.JCReverb({
+  const reverbEffect = new Tone.JCReverb({
     roomSize: 0.8,
     wet: 0.5,
   }).toDestination();
-  applyEffect(reverb);
+  applyEffect(reverbEffect);
 });
 
 chorus.addEventListener("click", () => {
@@ -83,11 +86,11 @@ chorus.addEventListener("click", () => {
 });
 
 distortion.addEventListener("click", () => {
-  const distort = new Tone.Distortion({
+  const distortionEffect = new Tone.Distortion({
     distortion: 0.8,
     saturate: 0.5,
   }).toDestination();
-  applyEffect(distort);
+  applyEffect(distortionEffect);
 });
 
 delay.addEventListener("click", () => {
@@ -100,31 +103,15 @@ delay.addEventListener("click", () => {
 });
 
 download.addEventListener("click", () => {
-  if (recorder) {
-    recorder.stop();
-    recorder.onstop = () => {
-      const audioBlob = new Blob(chunks, { type: "audio/wav" });
-      const audioUrl = URL.createObjectURL(audioBlob);
-      const link = document.createElement("a");
-      link.href = audioUrl;
-      link.download = "recording.wav";
-      link.style.display = "none";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      chunks = [];
-    };
+  if (audioBlobUrl) {
+    const link = document.createElement("a");
+    link.href = audioBlobUrl;
+    link.download = "recording.wav";
+    link.style.display = "none";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   } else {
-    console.log("Recorder not started or already stopped.");
+    console.log("No recording available to download.");
   }
 });
-
-const recordingEffect = () => {
-  const destination = Tone.context.createMediaStreamDestination();
-  Tone.Master.connect(destination);
-  recorder = new MediaRecorder(destination.stream);
-  recorder.ondataavailable = (event) => {
-    chunks.push(event.data);
-  };
-  recorder.start();
-};
