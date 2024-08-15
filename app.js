@@ -1,59 +1,58 @@
-const record = document.getElementById("record");
-const stopRecord = document.getElementById("stop-record");
-const playback = document.getElementById("playback");
-const download = document.getElementById("download");
-const container = document.getElementById("container");
-const recording = document.getElementById("recording");
-const reverb = document.getElementById("reverb");
-const delay = document.getElementById("delay");
-const chorus = document.getElementById("chorus");
-const distortion = document.getElementById("distortion");
-const userMedia = new Tone.UserMedia();
+const recordButton = document.getElementById("record");
+const stopRecordButton = document.getElementById("stop-record");
+const playbackButton = document.getElementById("playback");
+const downloadButton = document.getElementById("download");
+const recordingText = document.getElementById("recording");
+const reverbButton = document.getElementById("reverb");
+const delayButton = document.getElementById("delay");
+const chorusButton = document.getElementById("chorus");
+const distortionButton = document.getElementById("distortion");
 
+if (Tone.context.state !== "running") {
+  Tone.context.resume();
+}
+let audioSrc;
+let recorderAudio;
 let player;
 let currentEffect = null;
 let recorder;
 let chunks = [];
-let audioBlobUrl = null;
 
-record.addEventListener("click", async () => {
+document.addEventListener("click", () => {
+  if (Tone.context.state === "suspended") {
+    Tone.context.resume();
+  }
+});
+
+const userMedia = new Tone.UserMedia();
+
+recordButton.addEventListener("click", async () => {
   await userMedia.open();
-  recorder = new Tone.Recorder();
-  userMedia.connect(recorder);
+  recorderAudio = new Tone.Recorder();
+  userMedia.connect(recorderAudio);
   startRecording();
 });
 
 function startRecording() {
-  recording.textContent = "Recording";
-  recorder.start();
+  recordingText.textContent = "Recording";
+  recorderAudio.start();
 }
 
-stopRecord.addEventListener("click", async () => {
-  if (recorder) {
-    try {
-      const recording = await recorder.stop();
-      if (recording instanceof Blob) {
-        audioBlobUrl = URL.createObjectURL(recording);
-        createAudioEL(audioBlobUrl);
-      } else {
-        console.error("Recorder.stop() did not return a Blob");
-      }
-    } catch (error) {
-      console.error("Error stopping recorder:", error);
-    }
-    recording.textContent = "";
+stopRecordButton.addEventListener("click", async () => {
+  if (recorderAudio) {
+    const recording = await recorderAudio.stop();
+    const url = URL.createObjectURL(recording);
+    createAudioElement(url);
   }
+  recordingText.textContent = "";
 });
 
-function createAudioEL(src) {
+function createAudioElement(src) {
   const audio = document.createElement("audio");
   audio.src = src;
   audio.controls = true;
-  container.appendChild(audio);
-  if (player) {
-    player.dispose();
-  }
-  player = new Tone.Player(src).toDestination();
+  audioSrc = src;
+  player = new Tone.Player(audioSrc).toDestination();
 }
 
 function applyEffect(effect) {
@@ -62,20 +61,19 @@ function applyEffect(effect) {
   }
   player.connect(effect);
   currentEffect = effect;
-  if (player.state === "stopped") {
-    player.start();
-  }
+  player.start();
+  recordingEffect();
 }
 
-reverb.addEventListener("click", () => {
-  const reverbEffect = new Tone.JCReverb({
+reverbButton.addEventListener("click", async () => {
+  const reverb = new Tone.JCReverb({
     roomSize: 0.8,
     wet: 0.5,
   }).toDestination();
-  applyEffect(reverbEffect);
+  applyEffect(reverb);
 });
 
-chorus.addEventListener("click", () => {
+chorusButton.addEventListener("click", async () => {
   const chorusEffect = new Tone.Chorus({
     frequency: 10,
     delayTime: 0.1,
@@ -85,15 +83,15 @@ chorus.addEventListener("click", () => {
   applyEffect(chorusEffect);
 });
 
-distortion.addEventListener("click", () => {
-  const distortionEffect = new Tone.Distortion({
+distortionButton.addEventListener("click", async () => {
+  const distort = new Tone.Distortion({
     distortion: 0.8,
     saturate: 0.5,
   }).toDestination();
-  applyEffect(distortionEffect);
+  applyEffect(distort);
 });
 
-delay.addEventListener("click", () => {
+delayButton.addEventListener("click", async () => {
   const delayEffect = new Tone.FeedbackDelay({
     delayTime: "8n",
     feedback: 0.6,
@@ -102,16 +100,28 @@ delay.addEventListener("click", () => {
   applyEffect(delayEffect);
 });
 
-download.addEventListener("click", () => {
-  if (audioBlobUrl) {
+downloadButton.addEventListener("click", () => {
+  recorder.stop();
+
+  recorder.onstop = () => {
+    const audioBlob = new Blob(chunks, { type: "audio/wav" });
+    const audioUrl = URL.createObjectURL(audioBlob);
     const link = document.createElement("a");
-    link.href = audioBlobUrl;
-    link.download = "recording.wav";
-    link.style.display = "none";
+    link.href = audioUrl;
+    link.setAttribute("download", "recording.wav");
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  } else {
-    console.log("No recording available to download.");
-  }
+    chunks = [];
+  };
 });
+
+const recordingEffect = async () => {
+  const destination = Tone.context.createMediaStreamDestination();
+  Tone.Master.connect(destination);
+  recorder = new MediaRecorder(destination.stream);
+  recorder.ondataavailable = (event) => {
+    chunks.push(event.data);
+  };
+  recorder.start();
+};
